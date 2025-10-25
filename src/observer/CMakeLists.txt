@@ -29,7 +29,42 @@ FOREACH (F ${ALL_SRC})
 ENDFOREACH (F)
 
 SET(LIBEVENT_STATIC_LINK TRUE)
-FIND_PACKAGE(Libevent CONFIG REQUIRED)
+#FIND_PACKAGE(Libevent CONFIG REQUIRED)
+# 手动查找 libevent 库
+find_library(Libevent_CORE_LIB 
+    NAMES event_core libevent_core
+    PATHS "/usr/lib/x86_64-linux-gnu"
+    NO_DEFAULT_PATH
+)
+
+find_library(Libevent_PTHREADS_LIB 
+    NAMES event_pthreads libevent_pthreads
+    PATHS "/usr/lib/x86_64-linux-gnu" 
+    NO_DEFAULT_PATH
+)
+
+if(Libevent_CORE_LIB AND Libevent_PTHREADS_LIB)
+    message(STATUS "Found libevent core: ${Libevent_CORE_LIB}")
+    message(STATUS "Found libevent pthreads: ${Libevent_PTHREADS_LIB}")
+    
+    # 创建导入目标
+    add_library(libevent::core SHARED IMPORTED)
+    set_target_properties(libevent::core PROPERTIES
+        IMPORTED_LOCATION "${Libevent_CORE_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "/usr/include"
+    )
+    
+    add_library(libevent::pthreads SHARED IMPORTED)
+    set_target_properties(libevent::pthreads PROPERTIES
+        IMPORTED_LOCATION "${Libevent_PTHREADS_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "/usr/include"
+    )
+    
+    set(Libevent_FOUND TRUE)
+else()
+    message(FATAL_ERROR "libevent not found")
+endif()
+
 FIND_PACKAGE(jsoncpp CONFIG REQUIRED)
 
 SET(LIBRARIES common pthread dl libevent::core libevent::pthreads)
